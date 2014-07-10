@@ -5,12 +5,30 @@ dated 07/09/2014
 ## Loading and preprocessing the data
 
 
+```r
+# The following code assumes a relative path where the data are located in a subdirectory called "/data/"
+activityData <- read.csv("data/activity.csv", header=TRUE)
+```
 
-Note: The data cover 61 days. The number of steps taken are recorded every 5 minutes for a total of 288 entries per day, for a total of 17568 data entries (i.e. the number of rows in the dataset).
+### Summary of the dataset
 
-There are 2304 NA's (missing values), 11014 zeros (0's), and 4250 entries of non-zero steps ranging from 1 to 99 steps in the 5 minute window.
+The data contain 3 columns of data which are " steps, date, interval ".
+
+There are 17568 rows of data covering 61 days. Each day the number of steps were recorded every 5 minutes during 24 hours for 288 total intervals per day.
+
+### Missing data, Zeros, and Potential Extreme Values (Potential Outliers)
 
 
+
+* There are 2304 NA's (missing values);
+* There are 11014 zeros (0's);
+* and 4250 entries with non-zero steps ranging from 1 to 806 steps in the 5 minute intervals.
+
+Some of these high values seem extreme - possibly too many steps recorded in a 5 minute interval. For example, the maximum number of steps of 806 in 5 minutes implies making 2.6867 steps every second.
+
+### Histogram of the Number of Steps Per 5 minute Interval (ignoring missing data)
+
+![plot of chunk hist1](figure/hist11.png) ![plot of chunk hist1](figure/hist12.png) 
 
 
 ## What is mean total number of steps taken per day?
