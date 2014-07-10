@@ -1,5 +1,6 @@
 # Reproducible Research: Peer Assessment 1
-
+by Melinda Higgins
+dated 07/09/2014
 
 ## Loading and preprocessing the data
 
