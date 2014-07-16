@@ -1,11 +1,28 @@
+---
+output:
+  html_document:
+    keep_md: yes
+    number_sections: no
+---
+
+```{r chunkoptions, echo=TRUE}
+# set global chunk options  
+
+knitr::opts_chunk$set(echo=TRUE)
+options(digits=2)
+
+```
+
 # Reproducible Research: Peer Assessment 1
 by Melinda Higgins
-dated 07/09/2014
+dated 07/15/2014
 
 ## Loading and preprocessing the data
 
 ```{r loadData}
-# The following code assumes a relative path where the data are located in a subdirectory called "/data/"
+# The following code assumes a relative path where 
+# the data are located in a subdirectory called "/data/"
+
 activityData <- read.csv("data/activity.csv", header=TRUE)
 ```
 
@@ -17,7 +34,10 @@ There are `r dim(activityData)[1]` rows of data covering `r dim(as.data.frame(ta
 
 ### Missing data, Zeros, and Potential Extreme Values (Potential Outliers)
 
-```{r missingReview, echo=FALSE}
+```{r missingReview}
+# create a copy of the dataset where the number of steps 
+# was NOT missing AND were > 0
+
 nomissing <- activityData[activityData$steps>0 & !is.na(activityData$steps),]
 ```
 
@@ -27,12 +47,24 @@ nomissing <- activityData[activityData$steps>0 & !is.na(activityData$steps),]
 
 Some of these high values seem extreme - possibly too many steps recorded in a 5 minute interval. For example, the maximum number of steps of `r max(nomissing$steps)` in 5 minutes implies making `r max(nomissing$steps)/(5*60)` steps every second.
 
-### Histogram of the Number of Steps Per 5 minute Interval (ignoring missing data)
+### Histogram of the Number of Steps Per 5 minute Interval: Including (A) Intervals with Zero steps and Missing Data and (B) For Intervals with the Number of Steps > 0 and no missing data.
 
-```{r hist1, fig.wight=3, fig.height=5, echo=FALSE}
-hist(activityData$steps, xlab="Number of Steps Per 5 Minute Interval", ylab="Count", main="Histogram of Steps in 5 Minute Intervals")
+```{r hist1, fig.width=6, fig.height=3}
+# Create histogram (A) with all the data including 0's and NAs (missing)
 
-hist(nomissing$steps, xlab="Number of Steps Per 5 Minute Interval", ylab="Count", main="Histogram of Steps in 5 Minute Intervals (Steps>0)")
+hist(activityData$steps, 
+     xlab="Number of Steps Per 5 Minute Interval", 
+     ylab="Count", 
+     main="Histogram of Steps in 5 Minute Intervals")
+```
+
+```{r hist2, fig.width=6, fig.height=3}
+# Create histogram (B) for only the intervals >0 and no missing
+
+hist(nomissing$steps, 
+     xlab="Number of Steps Per 5 Minute Interval", 
+     ylab="Count of Steps > 0", 
+     main="Histogram of Steps in 5 Minute Intervals (Steps>0)")
 
 ```
 
@@ -41,13 +73,125 @@ hist(nomissing$steps, xlab="Number of Steps Per 5 Minute Interval", ylab="Count"
 
 Calculate the overall mean and the mean for each day. Also run for the medians per day and overall - with an without the "imputation" method tried below...
 
+```{r summaryTable1}
 
+meanSteps <- tapply(activityData$steps, 
+                    activityData$interval, 
+                    mean, na.rm=TRUE)
+summary(meanSteps)
+
+library(tables)
+
+# this sort of works but won't work with the NAs
+tabular((as.factor(interval)+1)~(n=1)+Format(digits=2)*(steps)*(mean + sd), data=nomissing)
+
+# also
+aa <- aggregate(activityData$steps, 
+                list(activityData$interval), 
+                mean, 
+                na.rm=TRUE)
+names(aa) <- c("Interval","Average Number of Steps")
+aa[which.max(aa[,2]),]
+
+# load chron and lattice libraries
+
+library(chron)
+library(lattice)
+
+# Use chron() function to create chronological objects for times and days
+
+activitydate <- chron(as.character(activityData$date),
+                      format=c(dates="y-m-d"),
+                      out.format=c("day months year"))
+
+# create copy fo original dataset, add extracted dates and times
+# and then extract the day of the week
+
+activityData2 <- activityData
+activityData2$date2 <- activitydate
+activityData2$weekday <- weekdays(activityData2$date2)
+
+# now sort over interval and Day of week
+
+aa2 <- aggregate(activityData2$steps, 
+                list(activityData2$interval, activityData2$weekday), 
+                mean, 
+                na.rm=TRUE)
+
+names(aa2) <- c("Interval","Day of Week","Average Number of Steps")
+aa2[which.max(aa2[,3]),]
+
+```
 
 
 ## What is the average daily activity pattern?
 
 Look at the raw data - scatterplot by time of day (the increments) - look at overall and by day of the week - also look at a table summarizing these data given the n, mean, median, maybe Q1, Q3, min and max - over all 61 days by time of day and again by day of week. make some plots to go along with...
 
+```{r extractdates, fig.height=12}
+# load chron and lattice libraries
+
+#library(chron)
+#library(lattice)
+
+# Use chron() function to create chronological objects for times and days
+
+#activitydate <- chron(as.character(activityData$date),
+#                      format=c(dates="y-m-d"),
+#                      out.format=c("day months year"))
+
+# create copy fo original dataset, add extracted dates and times
+# and then extract the day of the week
+
+#activityData2 <- activityData
+#activityData2$date2 <- activitydate
+#activityData2$weekday <- weekdays(activityData2$date2)
+
+# create an xyplot using the lattice package and ploy Day of Week separately
+
+xyplot(activityData2$steps ~ activityData2$interval | factor(activityData2$weekday),
+       type=c("p","spline"),
+       col.line="darkorange",
+       lwd=3, 
+       layout=c(1,7))
+
+```
+
+```{r xtabletest, results='asis'}
+# test of xtable function for lm fit summary
+
+library(xtable)
+fitlm <- lm(activityData2$steps ~ activityData2$interval)
+fitlmxtable <- xtable(fitlm)
+print.xtable(fitlmxtable,type="html")
+
+testdataf <- activityData2[1:30,]
+testdataf.xtable <- xtable(activityData2[1:30,])
+print(testdataf.xtable, type="html", floating=FALSE)
+
+
+```
+
+### Summary Statistics for Number of Steps in 5 Minute Intervals
+
+```{r xtabletest2, results='asis'}
+# second test of xtable using summary statistics
+
+sumsteps <- summary(activityData2$steps)
+sumstepsxtable <- xtable(table(sumsteps))
+print.xtable(sumstepsxtable, type="html")
+
+```
+
+### Summary Statistics for Number of Steps (in 5 min interval)
+=============================================================
+Statistic   | Value
+----------- | ----------
+Mean        | `r round(mean(activityData2$steps, na.rm=TRUE),2)`
+Median      | `r round(median(activityData2$steps, na.rm=TRUE),2)`
+SD          | `r round(sd(activityData2$steps, na.rm=TRUE),2)`
+Min         | `r round(min(activityData2$steps, na.rm=TRUE),2)`
+Max         | `r round(max(activityData2$steps, na.rm=TRUE),2)`
 
 
 ## Imputing missing values
